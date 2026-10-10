@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>弥生会計 Nextへの移行について（図解）</title>
+<style>
+:root{
+  --ink:#1c2430; --muted:#44505f; --base:#1f3a5f; --base-ink:#ffffff;
+  --soft:#eef2f7; --line:#b9c5d4; --bg:#fbfcfe; --card:#ffffff; --accent:#2d6a9f;
+  --imp-fg:#8c3b3b; --imp-bg:#fbf6f5;
+  --cau-fg:#6b4200; --cau-bg:#fff3d0;
+  --chk-fg:#0b4f5e; --chk-bg:#e1f3f6;
+  --ref-fg:#1d4e89; --ref-bg:#eaf1fb;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Yu Gothic UI","Yu Gothic","Meiryo","Hiragino Sans","Noto Sans JP","Noto Sans CJK JP",sans-serif;
+  font-size:1rem;line-height:1.8}
+.layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:32px;max-width:1380px;margin:0 auto;padding:24px 28px 64px}
+nav.toc{position:sticky;top:16px;align-self:start;border:2px solid var(--line);border-radius:10px;background:var(--card);padding:14px 16px}
+nav.toc p{margin:0 0 6px;font-weight:700;font-size:0.95rem;color:var(--muted)}
+nav.toc ol{margin:0;padding:0;list-style:none}
+nav.toc li{margin:0}
+nav.toc a{display:block;padding:6px 8px;border-radius:6px;color:var(--ink);text-decoration:none;font-size:0.95rem;line-height:1.5}
+nav.toc a:hover,nav.toc a:focus{background:var(--soft);text-decoration:underline}
+main{min-width:0;max-width:1100px}
+h1{font-size:2rem;line-height:1.35;margin:0 0 8px;color:var(--base)}
+h2{font-size:1.5rem;line-height:1.4;margin:0 0 16px;padding:0 0 8px;border-bottom:4px solid var(--base);color:var(--base)}
+h3{font-size:1.15rem;line-height:1.5;margin:0 0 10px}
+h4{font-size:1.05rem;margin:0 0 8px}
+section.block{margin:0 0 48px;scroll-margin-top:16px}
+.lead{max-width:46em;margin:0 0 12px}
+.titleblock{border-left:10px solid var(--base);padding:6px 0 6px 18px;margin:0 0 28px}
+.titleblock p{margin:0;color:var(--muted);font-size:1rem}
+
+/* 区分ラベル */
+.tag{display:inline-block;font-weight:700;font-size:0.95rem;line-height:1.4;padding:1px 10px;border-radius:6px;border:2px solid;margin:0 8px 4px 0;vertical-align:baseline}
+.tag.imp{color:var(--imp-fg);background:var(--imp-bg);border-color:var(--imp-fg)}
+.tag.cau{color:var(--cau-fg);background:var(--cau-bg);border-color:var(--cau-fg);border-style:dashed}
+.tag.chk{color:var(--chk-fg);background:var(--chk-bg);border-color:var(--chk-fg);border-style:double;border-width:4px;padding:0 8px}
+.callout{border:2px solid;border-radius:10px;padding:12px 16px;margin:14px 0;max-width:46em}
+.callout.imp{border-color:var(--line);border-left-color:var(--imp-fg);background:var(--imp-bg);border-left-width:6px}
+.callout.cau{border-color:var(--cau-fg);background:var(--cau-bg);border-style:dashed;border-left-width:10px}
+.callout.chk{border-color:var(--chk-fg);background:var(--chk-bg);border-style:double;border-width:4px}
+.callout p{margin:0}
+
+/* 全体像 */
+.overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:0 0 8px;padding:0;list-style:none}
+.overview li{margin:0}
+.overview a{display:block;height:100%;border:2px solid var(--line);border-radius:10px;background:var(--card);padding:10px 14px;color:var(--ink);text-decoration:none}
+.overview a:hover,.overview a:focus{border-color:var(--base);background:var(--soft)}
+.overview .no{display:block;font-weight:700;color:var(--base);font-size:0.95rem}
+.overview .nm{display:block;font-weight:700;line-height:1.5}
+.overview .ct{display:block;color:var(--muted);font-size:0.95rem;line-height:1.5;margin-top:2px}
+
+/* 比較（現在 vs Next） */
+.vs{display:grid;grid-template-columns:1fr 56px 1fr;align-items:stretch;gap:0;margin:16px 0}
+.vs .side{border:2px solid var(--line);border-radius:12px;background:var(--card);padding:14px 18px}
+.vs .side.next{border-color:var(--base);border-width:3px}
+.vs .side h3{margin:0 0 6px;color:var(--base)}
+.vs .side p{margin:0}
+.vs .mid{display:flex;align-items:center;justify-content:center;font-size:1.6rem;font-weight:700;color:var(--base)}
+.vs .where{display:inline-block;font-weight:700;font-size:0.95rem;background:var(--soft);border-radius:6px;padding:0 8px;margin-bottom:6px}
+
+/* 共有ハブ図 */
+figure.hub{margin:20px 0;padding:16px;border:2px solid var(--line);border-radius:12px;background:var(--card)}
+figure.hub figcaption{font-weight:700;margin:0 0 12px}
+.hubgrid{display:grid;grid-template-columns:1fr 36px 1.1fr 36px 1fr;align-items:center;gap:0}
+.roles{display:grid;gap:10px}
+.role{border:2px solid var(--base);border-radius:10px;padding:8px 12px;background:var(--soft)}
+.role b{display:block;color:var(--base)}
+.role span{display:block;font-size:0.95rem;line-height:1.55}
+.link{height:4px;background:var(--base);border-radius:2px;margin:0 2px}
+.core{border:4px solid var(--base);border-radius:14px;background:var(--base);color:var(--base-ink);text-align:center;padding:22px 12px;font-weight:700;line-height:1.6}
+.core span{display:block;font-weight:400;font-size:0.95rem}
+
+/* カード */
+.cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.card{border:2px solid var(--line);border-radius:12px;background:var(--card);padding:14px 18px;break-inside:avoid}
+.card.warn{border-color:var(--cau-fg);border-style:dashed;background:#fffdf5}
+.card h3{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.card h3 .mk{display:inline-block;min-width:2em;text-align:center;font-weight:700;color:var(--base-ink);background:var(--base);border-radius:999px;padding:0 8px}
+.card ul{margin:0;padding-left:1.3em}
+.card li{margin:4px 0}
+
+/* ステップ */
+.strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;margin:0 0 20px;padding:0;list-style:none;counter-reset:s}
+.strip li{position:relative;margin:0;padding:0 14px 0 0}
+.strip li:last-child{padding-right:0}
+.strip li::after{content:"";position:absolute;right:2px;top:50%;width:0;height:0;border-left:11px solid var(--base);border-top:9px solid transparent;border-bottom:9px solid transparent;transform:translateY(-50%)}
+.strip li:last-child::after{display:none}
+.strip a{display:block;height:100%;border:2px solid var(--base);border-radius:10px;background:var(--card);padding:8px 10px;color:var(--ink);text-decoration:none;line-height:1.5}
+.strip a:hover,.strip a:focus{background:var(--soft)}
+.strip b{display:block;color:var(--base);font-size:0.95rem}
+.steps{margin:0;padding:0;list-style:none;display:grid;gap:14px}
+.step{display:grid;grid-template-columns:120px minmax(0,1fr);border:2px solid var(--line);border-radius:12px;background:var(--card);overflow:visible;scroll-margin-top:16px;break-inside:avoid}
+.step .no{background:var(--base);color:var(--base-ink);border-radius:10px 0 0 10px;padding:12px 8px;text-align:center;font-weight:700;line-height:1.3}
+.step .no span{display:block;font-size:1.9rem}
+.step .body{padding:12px 18px}
+.step h3{margin:0 0 8px}
+.step p{margin:0 0 8px;max-width:46em}
+.step ul{margin:0 0 8px;padding-left:1.3em}
+.step ul.check{list-style:none;padding-left:0}
+.step ul.check li{padding-left:1.8em;position:relative;margin:4px 0}
+.step ul.check li::before{content:"□";position:absolute;left:0;font-weight:700;color:var(--base)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:8px 0}
+.opt{border:2px solid var(--base);border-radius:10px;padding:8px 12px;background:var(--soft);font-weight:700}
+.opt span{display:block;font-weight:700;color:var(--base);font-size:0.95rem}
+
+/* 費用 */
+table{border-collapse:collapse;width:100%;background:var(--card)}
+caption{text-align:left;font-weight:700;padding:0 0 8px}
+th,td{border:2px solid var(--line);padding:8px 12px;text-align:left;vertical-align:top;line-height:1.6}
+th{background:var(--soft);font-weight:700}
+.price{font-size:1.4rem;font-weight:700;color:var(--base);white-space:nowrap}
+.pricetbl{max-width:640px}
+.users{display:grid;grid-template-columns:3fr 4fr;gap:0;margin:14px 0;max-width:640px}
+.users div{border:2px solid var(--base);padding:10px 14px;font-weight:700;line-height:1.5}
+.users div:first-child{background:var(--soft);border-radius:10px 0 0 10px}
+.users div:last-child{background:var(--card);border-left:0;border-radius:0 10px 10px 0}
+.users span{display:block;font-weight:400;font-size:0.95rem;color:var(--muted)}
+
+/* 進め方 */
+.lanes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;margin:16px 0}
+.lane{border:2px solid var(--base);border-radius:12px;padding:12px 14px;background:var(--card);position:relative;margin-right:22px;font-weight:700;line-height:1.55}
+.lane:last-child{margin-right:0}
+.lane:not(:last-child)::after{content:"";position:absolute;right:-20px;top:50%;border-left:14px solid var(--base);border-top:11px solid transparent;border-bottom:11px solid transparent;transform:translateY(-50%)}
+.lane .no{display:block;font-size:0.95rem;color:var(--base)}
+.lane.last{background:var(--soft)}
+.keep{grid-column:1 / span 2;margin:10px 22px 0 0;border:2px dashed var(--base);border-radius:10px;padding:8px 14px;background:var(--soft);line-height:1.55}
+.keep b{color:var(--base)}
+
+
+@media (max-width:1100px){
+  .layout{grid-template-columns:1fr;gap:16px;padding:16px}
+  nav.toc{position:static}
+  nav.toc ol{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+}
+@media (max-width:768px){
+  .overview{grid-template-columns:1fr}
+  .vs{grid-template-columns:1fr}
+  .vs .mid{padding:4px 0;transform:rotate(90deg)}
+  .hubgrid{grid-template-columns:1fr}
+  .hubgrid .link{width:4px;height:22px;margin:4px auto}
+  .cards,.two{grid-template-columns:1fr}
+  .strip{grid-template-columns:1fr;gap:10px}
+  .strip li{padding:0}
+  .strip li::after{display:none}
+  .step{grid-template-columns:1fr}
+  .step .no{border-radius:10px 10px 0 0;padding:6px 8px}
+  .step .no span{display:inline;font-size:1.2rem}
+  .lanes{grid-template-columns:1fr;gap:10px}
+  .lane{margin-right:0}
+  .lane:not(:last-child)::after{display:none}
+  .keep{grid-column:auto;margin:0}
+  .users{grid-template-columns:1fr}
+  .users div:first-child{border-radius:10px 10px 0 0}
+  .users div:last-child{border-left:2px solid var(--base);border-top:0;border-radius:0 0 10px 10px}
+  th,td{padding:6px 8px}
+  .price{white-space:normal}
+}
+@media print{
+  body{background:#fff}
+  nav.toc{display:none}
+  .layout{display:block;padding:0}
+  .card,.step,.callout,figure.hub,tr{break-inside:avoid}
+  .core,.step .no,.card h3 .mk{background:#fff;color:#000;border:3px solid #000}
+  .tag,.callout{box-shadow:none}
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav class="toc" aria-label="目次">
+  <p>目次</p>
+  <ol>
+    <li><a href="#overview">全体像</a></li>
+    <li><a href="#s1">1. 弥生会計 Nextとは</a></li>
+    <li><a href="#s2">2. 主な特徴</a></li>
+    <li><a href="#s3">3. 移行までの流れ</a></li>
+    <li><a href="#s4">4. 導入費用の目安</a></li>
+    <li><a href="#s5">5. 今後の進め方</a></li>
+  </ol>
+</nav>
+
+<main>
+<div class="titleblock">
+  <h1>弥生会計 Nextへの移行について</h1>
+</div>
+
+<section class="block" id="overview" aria-labelledby="h-overview">
+  <h2 id="h-overview">全体像</h2>
+  <p class="lead">原文は5つの章で構成されています。各カードから該当の章へ移動できます。</p>
+  <ol class="overview">
+    <li><a href="#s1"><span class="no">1</span><span class="nm">弥生会計 Nextとは</span><span class="ct">クラウド型の会計ソフト</span></a></li>
+    <li><a href="#s2"><span class="no">2</span><span class="nm">主な特徴</span><span class="ct">特徴 ①〜③ と注意点 ④</span></a></li>
+    <li><a href="#s3"><span class="no">3</span><span class="nm">移行までの流れ</span><span class="ct">STEP 1〜5（5段階）</span></a></li>
+    <li><a href="#s4"><span class="no">4</span><span class="nm">導入費用の目安</span><span class="ct">ベーシックプランの料金</span></a></li>
+    <li><a href="#s5"><span class="no">5</span><span class="nm">今後の進め方</span><span class="ct">試してから正式移行</span></a></li>
+  </ol>
+</section>
+
+<section class="block" id="s1" aria-labelledby="h-s1">
+  <h2 id="h-s1">1. 弥生会計 Nextとは</h2>
+  <p class="lead">弥生会計 Nextは、インターネット上で利用できるクラウド型の会計ソフトです。</p>
+  <div class="vs">
+    <div class="side">
+      <span class="where">現在</span>
+      <h3>現在使用している弥生会計</h3>
+      <p>パソコンにインストールして使用するソフトです。</p>
+    </div>
+    <div class="mid" aria-hidden="true">→</div>
+    <div class="side next">
+      <span class="where">これから</span>
+      <h3>弥生会計 Next</h3>
+      <p>インターネット環境があれば、各自のパソコンから利用できます。</p>
+    </div>
+  </div>
+  <div class="callout imp">
+    <p><span class="tag imp">★ 重要</span><strong>最大のメリットは、複数の社員や社長、税理士が、同じ会計データを共有できることです。</strong></p>
+  </div>
+  <figure class="hub">
+    <figcaption>同じ会計データを共有する人（原文「2. 主な特徴 ①」の内容を図にしたもの）</figcaption>
+    <div class="hubgrid">
+      <div class="roles">
+        <div class="role"><b>社員（2名以上）</b><span>それぞれのパソコンから仕訳を入力</span></div>
+        <div class="role"><b>社長</b><span>自分のパソコンから売上・経費・利益などを確認</span></div>
+        <div class="role"><b>税理士</b><span>同じデータを確認し、必要に応じて仕訳を修正</span></div>
+      </div>
+      <div class="link" aria-hidden="true"></div>
+      <div class="core">同じ会計データ<span>弥生会計 Next（インターネット上）</span></div>
+      <div class="link" aria-hidden="true"></div>
+      <div class="role"><b>会計データの受け渡し</b><span>これまでのように受け渡しをする必要がなくなります</span></div>
+    </div>
+  </figure>
+</section>
+
+<section class="block" id="s2" aria-labelledby="h-s2">
+  <h2 id="h-s2">2. 弥生会計 Nextの主な特徴</h2>
+  <div class="cards">
+    <article class="card">
+      <h3><span class="mk">①</span>複数人で会計データを共有できる</h3>
+      <ul>
+        <li>社員2名以上が、それぞれのパソコンから仕訳を入力できます。</li>
+        <li>社長は、自分のパソコンから売上・経費・利益などを確認できます。</li>
+        <li>税理士も同じデータを確認し、必要に応じて仕訳を修正できます。</li>
+        <li>これまでのように、会計データの受け渡しをする必要がなくなります。</li>
+      </ul>
+    </article>
+    <article class="card">
+      <h3><span class="mk">②</span>リモートワークに適している</h3>
+      <ul>
+        <li>自宅・会社・出張先など、場所を問わず利用できます。</li>
+        <li>パソコンごとに会計ソフトをインストールする必要がありません。</li>
+        <li>複数人が同時に作業できます。</li>
+      </ul>
+    </article>
+    <article class="card">
+      <h3><span class="mk">③</span>現在の主な会計業務を継続できる</h3>
+      <ul>
+        <li>仕訳入力、帳簿の確認、試算表や決算書の作成ができます。</li>
+        <li>現在利用している部門別の損益管理も可能です。</li>
+        <li>税理士が利用する税務申告ソフト「達人シリーズ」とのデータ連携にも対応しています。</li>
+      </ul>
+    </article>
+    <article class="card warn">
+      <h3><span class="mk">④</span>注意点 <span class="tag cau">▲ 注意</span></h3>
+      <ul>
+        <li>現在の弥生会計とは操作画面が異なるため、最初は慣れる必要があります。</li>
+        <li>一部の機能は従来の弥生会計と異なります。</li>
+        <li>インターネットに接続できない場合は利用できません。</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section class="block" id="s3" aria-labelledby="h-s3">
+  <h2 id="h-s3">3. 移行までの流れ</h2>
+  <ol class="strip" aria-label="移行の5段階">
+    <li><a href="#step1"><b>STEP 1</b>弥生会計 Nextを申し込む</a></li>
+    <li><a href="#step2"><b>STEP 2</b>現在の会計データを移行する</a></li>
+    <li><a href="#step3"><b>STEP 3</b>社員・社長・税理士の利用設定をする</a></li>
+    <li><a href="#step4"><b>STEP 4</b>正しく利用できるか確認する</a></li>
+    <li><a href="#step5"><b>STEP 5</b>Nextでの運用を開始する</a></li>
+  </ol>
+  <ol class="steps">
+    <li class="step" id="step1">
+      <div class="no">STEP<span>1</span></div>
+      <div class="body">
+        <h3>弥生会計 Nextを申し込む</h3>
+        <p>会社名義でNextを契約します。</p>
+        <p>現在の部門別管理を継続するため、「ベーシックプラン」以上を想定しています。</p>
+      </div>
+    </li>
+    <li class="step" id="step2">
+      <div class="no">STEP<span>2</span></div>
+      <div class="body">
+        <h3>現在の会計データを移行する</h3>
+        <p>現在の弥生会計から、Nextへ会計データを移します。</p>
+        <ul>
+          <li>勘定科目・補助科目</li>
+          <li>部門別の設定</li>
+          <li>会計期間の開始時点の残高</li>
+          <li>これまでに入力した仕訳</li>
+        </ul>
+        <p><span class="tag chk">？ 要確認</span>過去何年分のデータを移すか、事前に決定します。</p>
+      </div>
+    </li>
+    <li class="step" id="step3">
+      <div class="no">STEP<span>3</span></div>
+      <div class="body">
+        <h3>社員・社長・税理士の利用設定をする</h3>
+        <p>各自が自分のパソコンからNextにアクセスできるよう設定します。</p>
+        <p>社員は仕訳入力、社長は主に閲覧、税理士は仕訳の確認・修正という運用を想定しています。</p>
+      </div>
+    </li>
+    <li class="step" id="step4">
+      <div class="no">STEP<span>4</span></div>
+      <div class="body">
+        <h3>正しく利用できるか確認する</h3>
+        <ul class="check">
+          <li>社員が問題なく仕訳を入力できるか</li>
+          <li>社長が会計データを確認できるか</li>
+          <li>税理士が仕訳を確認・修正できるか</li>
+          <li>移行前後で会計数値が一致しているか</li>
+          <li>決算・税務申告に必要なデータを取り出せるか</li>
+        </ul>
+        <p>これらを確認します。</p>
+      </div>
+    </li>
+    <li class="step" id="step5">
+      <div class="no">STEP<span>5</span></div>
+      <div class="body">
+        <h3>Nextでの運用を開始する</h3>
+        <p>問題がなければ、正式にNextへ切り替えます。</p>
+        <p>移行の時期は、次の2つの方法があります。</p>
+        <div class="two">
+          <div class="opt"><span>方法 A</span>決算期の切り替わりに合わせる方法</div>
+          <div class="opt"><span>方法 B</span>期中に切り替える方法</div>
+        </div>
+      </div>
+    </li>
+  </ol>
+</section>
+
+<section class="block" id="s4" aria-labelledby="h-s4">
+  <h2 id="h-s4">4. 導入費用の目安</h2>
+  <p class="lead">部門別管理に対応した「ベーシックプラン」の料金は、以下のとおりです。</p>
+  <table class="pricetbl">
+    <caption>ベーシックプランの料金（税抜）</caption>
+    <tbody>
+      <tr><th scope="row">年契約</th><td><span class="price">50,400円</span>（税抜）</td></tr>
+      <tr><th scope="row">月契約</th><td><span class="price">5,040円</span>（税抜）</td></tr>
+    </tbody>
+  </table>
+  <div class="users" role="group" aria-label="会計機能のユーザー数と追加料金">
+    <div>会計機能は3名まで<span>追加料金なし</span></div>
+    <div>4名目以降は1名につき<span>月300円（税抜）追加</span></div>
+  </div>
+  <div class="callout chk">
+    <p><span class="tag chk">？ 要確認</span>※2026年10月時点の表示価格です。税理士とのデータ共有に関するライセンス条件は別途確認します。</p>
+  </div>
+</section>
+
+<section class="block" id="s5" aria-labelledby="h-s5">
+  <h2 id="h-s5">5. 今後の進め方</h2>
+  <div class="callout imp">
+    <p><span class="tag imp">★ 重要</span><strong>まずはNextを試し、現在の会計業務に支障がないことを確認してから、正式に移行する方法をおすすめします。</strong></p>
+  </div>
+  <div class="lanes" role="group" aria-label="進め方の流れ">
+    <div class="lane"><span class="no">1</span>まずはNextを試す</div>
+    <div class="lane"><span class="no">2</span>入力・閲覧・税理士との連携に問題がないことを確認する</div>
+    <div class="lane last"><span class="no">3</span>切り替える（予定）</div>
+    <div class="keep"><b>現在の弥生会計：</b>すぐに使えなくする必要はありません。</div>
+  </div>
+  <p class="lead">新しいNextでの入力・閲覧・税理士との連携に問題がないことを確認したうえで、切り替える予定です。</p>
+</section>
+
+</main>
+</div>
+</body>
+</html>
+
